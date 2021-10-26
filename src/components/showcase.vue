@@ -43,12 +43,21 @@
 				</div>
 			</div>
 		</div>
+		<div class="content center"><button @click="gotoMint">You need a MetaPen to draw.</button></div>
 	</div>
 </template>
 
 <style scoped>
 div.container {
 	position: relative;
+}
+div.content.center {
+	text-align: center;
+}
+div.content.center button {
+	padding: 5px 15px;
+	font-size: 18px;
+	font-weight: bold;
 }
 div.frame {
 	display: flex;
@@ -514,6 +523,9 @@ export default {
 
 			removes.sort((a, b) => b - a);
 			removes.forEach(idx => drawTask.splice(idx, 1));
+		},
+		gotoMint () {
+			this.$router.push({path: '/mint'});
 		},
 	}
 }

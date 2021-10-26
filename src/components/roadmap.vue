@@ -12,7 +12,7 @@
 		<div class="subtitle">Post-sellout Stage</div>
 		<div class="content">
 			<ul>
-				<li><span class="hint">2021 Oct</span>, MetaCanvas activated and utility token $RTV token airdropped. 10% of the total supply of $RTV will be distributed.<br>ArtDAO members will be voting on the DAO's decision about development and investment.</li>
+				<li><span class="hint">2021 Oct</span>, MetaCanvas activated and utility token $ARTV token airdropped. 10% of the total supply of $ARTV will be distributed.<br>ArtDAO members will be voting on the DAO's decision about development and investment.</li>
 				<li><span class="hint">2021 Thanksgiving</span>, MetaCanvas drawing completed,second Artiverse project activated, the second NFT tool airdropped to ArtDAO members.</li>
 				<li><span class="hint">2021 Christmas</span>, second Artiverse project finished and third Ariverse project activated, the third NFT tool airdropped to ArtDao members.</li>
 				<li><span class="hint">2022 - </span>, Artiverse 1.0 finished</li>

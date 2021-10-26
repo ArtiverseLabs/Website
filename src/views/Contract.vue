@@ -48,7 +48,7 @@
 			<span class="hint">Pixel Drawn:</span>
 			<span>{{cvsDrawn}}</span>
 			<span class="hint">Total ArtiV: </span>
-			<span class="result">{{rtvSupply}} RTV</span>
+			<span class="result">{{rtvSupply}} ARTV</span>
 		</div>
 		<div class="content">
 			<span class="hint">Total Pen: </span>
@@ -63,8 +63,8 @@
 		<div class="content">
 			<span class="hint">Pixels You Own:</span>
 			<span>{{cvsStock}}</span>
-			<span class="hint">RTV You Own: </span>
-			<span class="result">{{rtvBalance}} RTV</span>
+			<span class="hint">ARTV You Own: </span>
+			<span class="result">{{rtvBalance}} ARTV</span>
 		</div>
 		<div class="content">
 			<span class="hint">All Pen: </span>
@@ -101,7 +101,7 @@
 			<input ref="rtvTransferTo" type="text">
 			<span>amount: </span>
 			<input ref="rtvTransferAmount" type="number" value="0">
-			<span>RTV</span>
+			<span>ARTV</span>
 			<button @click="getRTVTransferTo">transfer</button>
 			<span class="result">{{rtvTransferToResult}}</span>
 		</div>
