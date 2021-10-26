@@ -1,0 +1,33 @@
+{
+	"name": "ArtiverseLabs",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"serve": "vue-cli-service serve --port 8000",
+		"build": "vue-cli-service build",
+		"demo": "node server"
+	},
+	"dependencies": {
+		"core-js": "^3.6.5",
+		"keccak256": "^1.0.3",
+		"koa": "^2.13.1",
+		"merkletreejs": "^0.2.24",
+		"mime-types": "^2.1.31",
+		"socket.io": "^4.1.2",
+		"truffle-hdwallet-provider": "^1.0.17",
+		"vue": "^3.0.0",
+		"vue-router": "^4.0.0-0",
+		"web3": "^1.6.0"
+	},
+	"devDependencies": {
+		"@vue/cli-plugin-babel": "~4.5.0",
+		"@vue/cli-plugin-router": "~4.5.0",
+		"@vue/cli-service": "~4.5.0",
+		"@vue/compiler-sfc": "^3.0.0"
+	},
+	"browserslist": [
+		"> 1%",
+		"last 2 versions",
+		"not dead"
+	]
+}
