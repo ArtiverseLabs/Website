@@ -368,6 +368,7 @@ export default {
 	mounted () {
 		if (!!window.ETHAddress) {
 			this.myID = window.ETHAddress;
+			this.getBasicInfos();
 		}
 
 		canvas = this.$refs.canvas;
