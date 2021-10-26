@@ -11,6 +11,7 @@ import '@/assets/cachedDB.js';
 import Web3 from 'web3';
 
 window.Web3 = Web3;
+window.mintStage = 1;
 
 const extendJS = () => {
 	const KeySet = [];

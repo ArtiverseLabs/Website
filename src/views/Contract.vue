@@ -82,26 +82,24 @@
 		<h2>Market</h2>
 		<div class="content">
 			<span class="hint">Mint MetaPen: </span>
-			<input ref="penPurchaseAmount" type="number" value="0">
-			<span>ETH</span>
-			<button @click="getPenPurchase">MINT</button>
-			<span class="result">0.08 ETH per MetaPen</span>
+			<input ref="penPurchaseAmount" type="number" value="0" min="0" @change="onChange" @keyup="onChange">
+			<button @click="getPenPurchase" :disabled="!canMint">MINT ({{penPay}} ETH)</button>
+			<span class="result">{{penPrice}} ETH per MetaPen {{mentionHint}}</span>
 		</div>
 		<div class="content" v-if="penPurchaseSuccessHint.length>0">{{penPurchaseSuccessHint.replace(/\n/gi, '; ')}}</div>
 		<div class="content">
 			<span class="hint">Transfer Pen: </span>
-			<input ref="penTransferTo" type="text">
-			<span>TokenID: </span>
-			<input ref="penTransferToken" type="number" value="0">
+			<input ref="penTransferToken" type="number" placeholder="tokenID">
+			<span class="short">To: </span>
+			<input ref="penTransferTo" type="text" placeholder="receiver address">
 			<button @click="getPENTransferTo">transfer</button>
 			<span class="result">{{penTransferToResult}}</span>
 		</div>
 		<div class="content">
 			<span class="hint">Transfer ArtiV: </span>
-			<input ref="rtvTransferTo" type="text">
-			<span>amount: </span>
-			<input ref="rtvTransferAmount" type="number" value="0">
-			<span>ARTV</span>
+			<input ref="rtvTransferAmount" type="number" placeholder="amount(ARTV)">
+			<span class="short">To: </span>
+			<input ref="rtvTransferTo" type="text" placeholder="receiver address">
 			<button @click="getRTVTransferTo">transfer</button>
 			<span class="result">{{rtvTransferToResult}}</span>
 		</div>
@@ -127,8 +125,13 @@ div.content.loading {
 	margin-bottom: 15px;
 }
 div.content span {
+	display: inline-block;
+	min-width: 100px;
 	margin-left: 5px;
 	margin-right: 5px;
+}
+div.content span.short {
+	min-width: 30px;
 }
 div.content span.hint {
 	display: inline-block;
@@ -142,9 +145,9 @@ div.content span.result {
 div.content button {
 	margin: 0px 10px;
 }
-div.content textarea {
-	width: 300px;
-	margin-left: 160px;
+div.content button[disabled] {
+	color: rgb(127, 127, 127);
+	pointer-events: none;
 }
 div.frame {
 	display: flex;
@@ -291,25 +294,23 @@ export default {
 	name: 'Contract',
 	data () {
 		return {
+			canMint: false,
+			mentionHint: '(loading...)',
 			allReady: false,
 			convertETH: 0,
 			myID: '',
 			userStatus: '',
-			cvsID: 0,
-			cvsDrawn: 0,
-			cvsStock: 0,
 			pointX: -1,
 			pointY: -1,
 			pointColor: '',
 			pointOwner: '',
 			pointPrice: 0,
+			cvsID: 0,
+			cvsDrawn: 0,
+			cvsStock: 0,
+			penPrice: 0.08,
+			penPay: 0,
 			penList: '',
-
-			rtvPaused: 'Unchecked',
-			rtvSupply: 0,
-			rtvBalance: 0,
-			rtvTransferToResult: '',
-			penPaused: 'Unchecked',
 			penSupply: 0,
 			penSold: 0,
 			penAvailable: 0,
@@ -317,13 +318,10 @@ export default {
 			penUBalance: 0,
 			penUAvailable: 0,
 			penUTotal: 0,
-			penOwner: 'unchecked',
-			penInfo: 'empty',
-			penIndex2Token: 0,
 			penTransferToResult: '',
-
-			cvsPixelInfo: '',
-			cvsDrawResult: '',
+			rtvSupply: 0,
+			rtvBalance: 0,
+			rtvTransferToResult: '',
 		}
 	},
 	components: {
@@ -348,17 +346,36 @@ export default {
 				return;
 			}
 			var data = msg.data;
-			if (data.proof.length === 0) return;
+			if (data.proof.length === 0) {
+				if (userType === 0) {
+					if (mintStage === 0) {
+						this.mentionHint = '(Please wait for mint)';
+					}
+					else if (mintStage === 1) {
+						this.mentionHint = '(You are not in the OG list)';
+					}
+					else if (mintStage === 2) {
+						this.mentionHint = '(You are not in the PreSale list)';
+					}
+					if (mintStage > 2) {
+						this.canMint = true;
+						this.mentionHint = '';
+					}
+				}
+				return;
+			}
 			if (data.target === 'presale' && userType > 1) return;
 			if (data.target === 'presale') {
 				userType = 1;
 				userProof = data.proof;
 				this.userStatus = ' | PreSale User';
+				if (mintStage > 1) this.canMint = true;
 			}
 			else if (data.target === 'og') {
 				userType = 2;
 				userProof = data.proof;
 				this.userStatus = ' | OG User';
+				this.canMint = true;
 			}
 			else {
 				return;
@@ -403,6 +420,10 @@ export default {
 			token = token[0].tokenID;
 			this.drawPixel(this.pointX, this.pointY, color, token);
 		},
+		onChange () {
+			var amount = this.$refs.penPurchaseAmount.value * 1;
+			this.penPay = amount * this.penPrice;
+		},
 
 		doConvert () {
 			var eth = this.$refs.testETH.value * 1;
@@ -417,6 +438,7 @@ export default {
 			var tasks = [];
 			tasks.push(this.getCanvasID());
 			tasks.push(this.getCanvasCanWithdraw());
+			tasks.push(this.getPenPrice());
 			tasks.push(this.getPenTotalSupply());
 			tasks.push(this.getPenTotalSold());
 			tasks.push(this.getPenTotalUnused());
@@ -469,6 +491,12 @@ export default {
 		async getCanvasSharing () {
 			var result = await this.callCVS('getSharing', this.cvsID);
 			this.cvsStock = result;
+		},
+		async getPenPrice () {
+			var result = await this.callPEN('getPenPrice');
+			result = result * 1;
+			result = result / 1000000000000000000;
+			this.penPrice = result;
 		},
 		async getPenTotalSupply () {
 			var result = await this.callPEN('totalSupply');
@@ -590,13 +618,14 @@ export default {
 		async getPenPurchase () {
 			eventBus.pub('showMask', 1000 * 60 * 15);
 			this.penPurchaseSuccessHint = '';
-			var amount = this.$refs.penPurchaseAmount.value;
-			amount = web3.utils.toWei(amount);
-			if (amount === '0') {
+			var amount = this.$refs.penPurchaseAmount.value * 1;
+			amount *= this.penPrice;
+			if (amount === 0) {
 				notify({title: "Can't buy MetaPen without ETH", type: 'error'});
 				eventBus.pub('hideMask');
 				return;
 			}
+			amount = web3.utils.toWei(amount + '');
 
 			var result;
 			try {

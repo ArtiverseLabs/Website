@@ -7,8 +7,8 @@
 			<p><span class="hint">OG mint</span>: 777</p>
 			<p><span class="hint">Colorlist mint</span>: 1000</p>
 			<p><span class="hint">Public mint</span>: 15000</p>
-			<p><span class="hint">Time</span>: Oct 25th UTC 03:00</p>
-			<p><span class="hint">Drawing starts</span>: Oct 28th UTC 00:00</p>
+			<p><span class="hint">Time</span>: Oct 31th UTC 03:00</p>
+			<p><span class="hint">Drawing starts</span>: Oct 31th UTC 00:00</p>
 			<p><span class="hint">Drawing ends</span>: Nov 11th UTC 00:00</p>
 		</div>
 		<div class="content buttons" v-if="stage>0">
@@ -52,7 +52,7 @@ export default {
 	name: 'Mint',
 	data () {
 		return {
-			stage: 0
+			stage: mintStage
 		}
 	},
 	methods: {
