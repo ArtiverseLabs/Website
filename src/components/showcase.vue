@@ -52,6 +52,7 @@ div.container {
 	position: relative;
 }
 div.content.center {
+	margin-top: 30px;
 	text-align: center;
 }
 div.content.center button {
@@ -121,6 +122,9 @@ div.infoPad div.subframe.bottom div.infoItem span.hint {
 	font-size: 20px;
 }
 @media screen and (max-width: 1150px) {
+	div.content.center {
+		margin-top: 0px;
+	}
 	div.frame {
 		flex-flow: column;
 	}
