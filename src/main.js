@@ -10,6 +10,12 @@ import '@/assets/lrucache.js';
 import '@/assets/cachedDB.js';
 import Web3 from 'web3';
 
+if (!location.protocol.match(/https/i)) {
+	if (!location.hostname.match(/^localhost$/i) && !location.hostname.match(/^192\./)) {
+		location.href = location.href.replace(/^http:/i, 'https:');
+	}
+}
+
 window.Web3 = Web3;
 window.mintStage = 1;
 
