@@ -9,6 +9,7 @@
 	},
 	"dependencies": {
 		"core-js": "^3.6.5",
+		"ganache-core": "^2.13.2",
 		"keccak256": "^1.0.3",
 		"koa": "^2.13.1",
 		"merkletreejs": "^0.2.24",

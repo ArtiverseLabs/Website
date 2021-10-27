@@ -12,8 +12,7 @@
 		<div class="title" v-if="checked&&proof.length>0">Your MerkleTree Proof:</div>
 		<div class="content longtext proof" v-for="line in proof">{{line}}</div>
 		<h1>Member List</h1>
-		<div class="content" v-if="list.length===0">No Member now...</div>
-		<div class="content longtext proof" v-for="item in list">{{item}}</div>
+		<div class="content">You can get the full list in the <a href="https://github.com/ArtiverseLabs/OG-list-and-colorlist/blob/main/OG-list" target="_blank">GitHub Project</a>.</div>
 	</div>
 </template>
 
@@ -83,7 +82,6 @@ export default {
 			target: '',
 			title: '',
 			root: '',
-			list: [],
 			eth: '',
 			proof: [],
 			address: '',
@@ -98,25 +96,14 @@ export default {
 				return;
 			}
 			this.root = msg.data.root;
-			this.list = [...msg.data.list];
 
 			if (dbStatus === 1) {
 				dbStatus = 2;
 				let target = this.target, time = Date.now();
 				cacheDB.set('root', target, msg.data.root);
-				msg.data.list.forEach(item => {
-					item = item.trim();
-					if (item.length === 0) return;
-					cacheDB.set(target, item, time);
-				});
 			}
 			else if (dbStatus === 0) {
 				dbRootTask = msg.data.root;
-				msg.data.list.forEach(item => {
-					item = item.trim();
-					if (item.length === 0) return;
-					dbTask.push(item);
-				});
 			}
 
 			if (this.masked) {
@@ -178,10 +165,6 @@ export default {
 
 			var root = await cacheDB.get('root', target);
 			if (!!root) this.root = root;
-			var list = await cacheDB.all(target);
-			if (dbStatus === 2) return;
-			this.list = Object.keys(list);
-			if (this.list.length === 0) return;
 
 			if (this.masked) {
 				this.masked = false;

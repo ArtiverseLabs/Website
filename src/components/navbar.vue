@@ -244,6 +244,7 @@ export default {
 				accounts = await ethereum.request({ method: 'eth_requestAccounts' });
 			}
 			catch (err) {
+				notify({title: 'Connect to MetaMask failed', message: err.message});
 				console.error('Connect to MetaMask failed:\n' + err.message);
 				return;
 			}
@@ -261,7 +262,7 @@ export default {
 			}
 			console.log('Chain ID: ' + chainId);
 			this.chainID = chainId;
-			eventBus.pub('eth-change-user', this.currUser);
+			eventBus.pub('eth-change-user', this.currUser, this.chainID);
 			localStorage.set('metamask-connected', true);
 		},
 		toMoonMode () {

@@ -259,12 +259,32 @@ div.infoPad div.subframe.bottom div.infoItem span.trigger {
 <script>
 import ColorPad from '@/components/colorpad.vue';
 
+const BlockFrom = {
+	mainnet: 13491907, // mainnet
+	ropsten: 11291580, // ropsten
+};
 var ctrRTV, ctrPEN, ctrCVS;
 var userType = 0, userProof = '';
 var wallet = null;
 var canvas, context;
 const ArtWidth = 100, ArtHeight = 100, ArtSize = 10;
+var showPurchaseHistory = false;
+var cacheDB;
 
+const prepareDB = async () => {
+	if (!!cacheDB) return;
+	var dbName = 'MetaCanvas';
+	cacheDB = new window.CachedDB(dbName, 1);
+	cacheDB.onUpdate(() => {
+		cacheDB.open('history', 'blockNum');
+		cacheDB.open('canvas', 'position');
+		console.log(dbName + ': Updated');
+	});
+	cacheDB.onConnect(() => {
+		console.log(dbName + ': Connected');
+	});
+	await cacheDB.connect();
+};
 const drawGrid = (x1, y1, color='white', fill=false, width=2) => {
 	x1 *= ArtSize;
 	y1 *= ArtSize;
@@ -322,23 +342,83 @@ export default {
 			rtvSupply: 0,
 			rtvBalance: 0,
 			rtvTransferToResult: '',
+			lastDrawBlockNum: 0,
 		}
 	},
 	components: {
 		ColorPad
 	},
 	created () {
+		var dbReady = false, dbHooker = null;
+		prepareDB().then(() => {
+			dbReady = true;
+			if (!!dbHooker) dbHooker();
+		});
+
 		ctrRTV = new web3.eth.Contract(Contracts.abi.rtv, Contracts.address.rtv);
 		ctrPEN = new web3.eth.Contract(Contracts.abi.pen, Contracts.address.pen);
 		ctrCVS = new web3.eth.Contract(Contracts.abi.cvs, Contracts.address.cvs);
 
-		eventBus.sub('eth-change-user', userId => {
+		eventBus.sub('eth-change-user', (userId, chainId) => {
 			userType = 0;
 			userProof = [];
 			wallet = null;
 			this.userStatus = '';
 			this.myID = userId;
 			this.getBasicInfos();
+
+			var blockFrom = 0, chainName = 'Test';
+			if (chainId === '0x1') {
+				blockFrom = BlockFrom.mainnet;
+				chainName = 'Mainnet';
+			}
+			else if (chainId === '0x3') {
+				blockFrom = BlockFrom.ropsten;
+				chainName = 'Ropsten';
+			}
+			else {
+				blockFrom = 0;
+			}
+			console.log('Login ' + chainName + ' as ' + userId);
+
+			if (showPurchaseHistory) {
+				ctrPEN.getPastEvents('Purchase', {filter: {owner: userId}, fromBlock: blockFrom}).then(events => {
+					console.log('[:> My Purchase History <:]');
+					events.forEach(evt => {
+						console.log('|-------------------------------------------|');
+						console.log('  BlockNum: ' + evt.blockNumber);
+						console.log('    TxHash: ' + evt.transactionHash);
+						var s = evt.returnValues.startTokenId * 1;
+						var l = evt.returnValues.count * 1;
+						var r = [];
+						for (let i = 0; i < l; i ++) {
+							r.push(s + i);
+						}
+						console.log('    PenIDs: ' + r.join(','));
+					});
+				});
+			}
+			if (dbReady) {
+				this.requestDrawHistory(chainName, blockFrom);
+			}
+			else {
+				dbHooker = () => this.requestDrawHistory(chainName, blockFrom);
+			}
+			ctrCVS.events.Draw((_, evt) => {
+				var data = {
+					blockNum: evt.blockNumber * 1,
+					owner: evt.returnValues.owner,
+					x: evt.returnValues.x * 1,
+					y: evt.returnValues.y * 1,
+					price: evt.returnValues.price * 1,
+					color: '#' + (evt.returnValues.color * 1).toString(16),
+				};
+				cacheDB.set('history', chainName + ':' + data.blockNum, data);
+				cacheDB.set('canvas', chainName + ':' + data.x + '-' + data.y, data);
+				drawGrid(data.x, data.y, data.color, true);
+				if (this.lastDrawBlockNum < blockNum) this.lastDrawBlockNum = blockNum;
+				cacheDB.set('history', chainName + ':0', this.lastDrawBlockNum);
+			});
 		});
 		eventBus.sub('checkMerkleProof', msg => {
 			if (!msg.success) {
@@ -381,6 +461,11 @@ export default {
 				return;
 			}
 		});
+
+		// for test
+		window.testRTV = ctrRTV;
+		window.testPEN = ctrPEN;
+		window.testCVS = ctrCVS;
 	},
 	mounted () {
 		if (!!window.ETHAddress) {
@@ -423,6 +508,39 @@ export default {
 		onChange () {
 			var amount = this.$refs.penPurchaseAmount.value * 1;
 			this.penPay = amount * this.penPrice;
+		},
+
+		async requestDrawHistory (chainName, blockFrom) {
+			var num = await cacheDB.get('history', 0);
+			if (!num) num = blockFrom;
+			else num --;
+
+			var list = await ctrCVS.getPastEvents('Draw', {filter: {canvasId: this.cvsID}, fromBlock: num});
+			list = list.map(evt => {
+				var data = {
+					blockNum: evt.blockNumber * 1,
+					owner: evt.returnValues.owner,
+					x: evt.returnValues.x * 1,
+					y: evt.returnValues.y * 1,
+					price: evt.returnValues.price * 1,
+					color: '#' + (evt.returnValues.color * 1).toString(16),
+				};
+				return data;
+			});
+			list.sort((d1, d2) => d1.blockNum - d2.blockNum);
+			list.forEach(data => {
+				cacheDB.set('history', chainName + ':' + data.blockNum, data);
+				cacheDB.set('canvas', chainName + ':' + data.x + '-' + data.y, data);
+				drawGrid(data.x, data.y, data.color, true);
+			});
+			var last = list[list.length - 1];
+			if (!!last) {
+				this.lastDrawBlockNum = last.blockNum;
+			}
+			else {
+				this.lastDrawBlockNum = 0;
+			}
+			await cacheDB.set('history', chainName + ':0', this.lastDrawBlockNum);
 		},
 
 		doConvert () {
