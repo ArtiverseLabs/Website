@@ -49,8 +49,8 @@ const extendJS = () => {
 
 	window.wait = (delay=0) => new Promise(res => setTimeout(res, delay));
 
-	localStorage.__proto__.get = (key, def={}) => {
-		var item = localStorage.getItem(key);
+	localStorage.__proto__.get = function (key, def={}) {
+		var item = this.getItem(key);
 		if (!item) return def;
 		try {
 			item = JSON.parse(item);
@@ -60,9 +60,9 @@ const extendJS = () => {
 		}
 		return item;
 	};
-	localStorage.__proto__.set = (key, value) => {
+	localStorage.__proto__.set = function (key, value) {
 		value = JSON.stringify(value);
-		localStorage.setItem(key, value);
+		this.setItem(key, value);
 	};
 
 	const events = new Map();
