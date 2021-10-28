@@ -268,23 +268,9 @@ var userType = 0, userProof = '';
 var wallet = null;
 var canvas, context;
 const ArtWidth = 100, ArtHeight = 100, ArtSize = 10;
-var showPurchaseHistory = false;
-var cacheDB;
+var showPurchaseHistory = false, emittedDrawEvents = new Set();
+var cacheDB, dbReady = false, dbHooker = null;
 
-const prepareDB = async () => {
-	if (!!cacheDB) return;
-	var dbName = 'MetaCanvas';
-	cacheDB = new window.CachedDB(dbName, 1);
-	cacheDB.onUpdate(() => {
-		cacheDB.open('history', 'blockNum');
-		cacheDB.open('canvas', 'position');
-		console.log(dbName + ': Updated');
-	});
-	cacheDB.onConnect(() => {
-		console.log(dbName + ': Connected');
-	});
-	await cacheDB.connect();
-};
 const drawGrid = (x1, y1, color='white', fill=false, width=2) => {
 	x1 *= ArtSize;
 	y1 *= ArtSize;
@@ -314,6 +300,7 @@ export default {
 	name: 'Contract',
 	data () {
 		return {
+			maskCanvas: false,
 			canMint: false,
 			mentionHint: '(loading...)',
 			allReady: false,
@@ -349,17 +336,104 @@ export default {
 		ColorPad
 	},
 	created () {
-		var dbReady = false, dbHooker = null;
-		prepareDB().then(() => {
+		prepareDB('MetaCanvas', db => {
+			db.open('history', 'blockNum');
+			db.open('canvas', 'position');
+		}).then(db => {
+			cacheDB = db;
 			dbReady = true;
 			if (!!dbHooker) dbHooker();
 		});
+
+		Contracts.address.rtv = '0x5F931E479FCde965DaeF19C296d24e3860d9d132'; // test
+		Contracts.address.pen = '0xDF922D9f03B94d6eDC6E056807C776809C9328E4'; // test
+		Contracts.address.cvs = '0x5B10381A0D5EaFFF2e9976a8F0e8FAC5430825Be'; // test
 
 		ctrRTV = new web3.eth.Contract(Contracts.abi.rtv, Contracts.address.rtv);
 		ctrPEN = new web3.eth.Contract(Contracts.abi.pen, Contracts.address.pen);
 		ctrCVS = new web3.eth.Contract(Contracts.abi.cvs, Contracts.address.cvs);
 
 		eventBus.sub('eth-change-user', (userId, chainId) => {
+			if (this.maskCanvas) {
+				this.maskCanvas = false;
+				eventBus.pub('hideMask');
+			}
+			this.onStart(userId, chainId);
+		});
+		eventBus.sub('checkMerkleProof', msg => {
+			if (!msg.success) {
+				notify({title: "get merkletree proof failed", type: 'error'});
+				return;
+			}
+			var data = msg.data;
+			if (data.proof.length === 0) {
+				if (userType === 0) {
+					if (mintStage === 0) {
+						this.mentionHint = '(Please wait for mint)';
+					}
+					else if (mintStage === 1) {
+						this.mentionHint = '(You are not in the OG list)';
+					}
+					else if (mintStage === 2) {
+						this.mentionHint = '(You are not in the PreSale list)';
+					}
+					if (mintStage > 2) {
+						this.canMint = true;
+						this.mentionHint = '';
+					}
+				}
+				return;
+			}
+			if (data.target === 'presale' && userType > 1) return;
+			if (data.target === 'presale') {
+				userType = 1;
+				userProof = data.proof;
+				this.userStatus = ' | PreSale User';
+				if (mintStage > 1) this.canMint = true;
+			}
+			else if (data.target === 'og') {
+				userType = 2;
+				userProof = data.proof;
+				this.userStatus = ' | OG User';
+				this.canMint = true;
+			}
+			else {
+				return;
+			}
+		});
+		eventBus.sub('loadCurrentCanvas', ({result, data}) => {
+			if (!this.maskCanvas) return;
+			this.maskCanvas = false;
+			eventBus.pub('hideMask');
+			if (!data) return;
+			for (let pos in data) {
+				let pixel = data[pos];
+				drawGrid(pixel.x, pixel.y, pixel.color, true);
+			}
+		});
+	},
+	mounted () {
+		if (!!window.ETHAddress) {
+			this.onStart(window.ETHAddress, window.ETHChainID);
+		}
+		else {
+			this.maskCanvas = true;
+			eventBus.pub('showMask');
+			setTimeout(() => {
+				if (!this.maskCanvas) return;
+				SocketChannel.sendRequest('loadCurrentCanvas');
+			}, 100);
+		}
+
+		canvas = this.$refs.canvas;
+		canvas.width = ArtWidth * ArtSize;
+		canvas.height = ArtHeight * ArtSize;
+		context = canvas.getContext('2d', {alpha: false});
+		context.fillStyle = 'white';
+		context.fillRect(0, 0, canvas.width, canvas.height);
+	},
+	methods: {
+		onStart (userId, chainId) {
 			userType = 0;
 			userProof = [];
 			wallet = null;
@@ -404,83 +478,28 @@ export default {
 			else {
 				dbHooker = () => this.requestDrawHistory(chainName, blockFrom);
 			}
+
 			ctrCVS.events.Draw((_, evt) => {
+				if (emittedDrawEvents.has(evt.transactionHash)) return;
+				emittedDrawEvents.add(evt.transactionHash);
+				var color = (evt.returnValues.color * 1).toString(16);
+				color = '#' + String.blank(6 - color.length, '0') + color;
 				var data = {
 					blockNum: evt.blockNumber * 1,
+					txHash: evt.transactionHash,
 					owner: evt.returnValues.owner,
 					x: evt.returnValues.x * 1,
 					y: evt.returnValues.y * 1,
 					price: evt.returnValues.price * 1,
-					color: '#' + (evt.returnValues.color * 1).toString(16),
+					color,
 				};
-				cacheDB.set('history', chainName + ':' + data.blockNum, data);
-				cacheDB.set('canvas', chainName + ':' + data.x + '-' + data.y, data);
+				cacheDB.set('history', chainName + '-' + this.cvsID + ':' + data.txHash, data);
+				cacheDB.set('canvas', chainName + '-' + this.cvsID + ':' + data.x + '-' + data.y, data);
 				drawGrid(data.x, data.y, data.color, true);
-				if (this.lastDrawBlockNum < blockNum) this.lastDrawBlockNum = blockNum;
+				if (this.lastDrawBlockNum < data.blockNum) this.lastDrawBlockNum = data.blockNum;
 				cacheDB.set('history', chainName + ':0', this.lastDrawBlockNum);
 			});
-		});
-		eventBus.sub('checkMerkleProof', msg => {
-			if (!msg.success) {
-				notify({title: "get merkletree proof failed", type: 'error'});
-				return;
-			}
-			var data = msg.data;
-			if (data.proof.length === 0) {
-				if (userType === 0) {
-					if (mintStage === 0) {
-						this.mentionHint = '(Please wait for mint)';
-					}
-					else if (mintStage === 1) {
-						this.mentionHint = '(You are not in the OG list)';
-					}
-					else if (mintStage === 2) {
-						this.mentionHint = '(You are not in the PreSale list)';
-					}
-					if (mintStage > 2) {
-						this.canMint = true;
-						this.mentionHint = '';
-					}
-				}
-				return;
-			}
-			if (data.target === 'presale' && userType > 1) return;
-			if (data.target === 'presale') {
-				userType = 1;
-				userProof = data.proof;
-				this.userStatus = ' | PreSale User';
-				if (mintStage > 1) this.canMint = true;
-			}
-			else if (data.target === 'og') {
-				userType = 2;
-				userProof = data.proof;
-				this.userStatus = ' | OG User';
-				this.canMint = true;
-			}
-			else {
-				return;
-			}
-		});
-
-		// for test
-		window.testRTV = ctrRTV;
-		window.testPEN = ctrPEN;
-		window.testCVS = ctrCVS;
-	},
-	mounted () {
-		if (!!window.ETHAddress) {
-			this.myID = window.ETHAddress;
-			this.getBasicInfos();
-		}
-
-		canvas = this.$refs.canvas;
-		canvas.width = ArtWidth * ArtSize;
-		canvas.height = ArtHeight * ArtSize;
-		context = canvas.getContext('2d', {alpha: false});
-		context.fillStyle = 'white';
-		context.fillRect(0, 0, canvas.width, canvas.height);
-	},
-	methods: {
+		},
 		onClick (evt) {
 			var padX = canvas.clientWidth / ArtWidth, padY = canvas.clientHeight / ArtHeight;
 			var x = Math.floor(evt.offsetX / padX), y = Math.floor(evt.offsetY / padY);
@@ -511,26 +530,39 @@ export default {
 		},
 
 		async requestDrawHistory (chainName, blockFrom) {
-			var num = await cacheDB.get('history', 0);
+			var prefix = chainName + '-' + this.cvsID + ':';
+			var num = await cacheDB.get('history', prefix + '0');
 			if (!num) num = blockFrom;
 			else num --;
 
-			var list = await ctrCVS.getPastEvents('Draw', {filter: {canvasId: this.cvsID}, fromBlock: num});
+			// load db canvas first
+			var list = await cacheDB.all('canvas');
+			for (let key in list) {
+				if (key.indexOf(prefix) !== 0) continue;
+				let data = list[key];
+				drawGrid(data.x, data.y, data.color, true);
+			}
+
+			// load canvas from chain
+			list = await ctrCVS.getPastEvents('Draw', {filter: {canvasId: this.cvsID}, fromBlock: num});
 			list = list.map(evt => {
+				var color = (evt.returnValues.color * 1).toString(16);
+				color = '#' + String.blank(6 - color.length, '0') + color;
 				var data = {
 					blockNum: evt.blockNumber * 1,
+					txHash: evt.transactionHash,
 					owner: evt.returnValues.owner,
 					x: evt.returnValues.x * 1,
 					y: evt.returnValues.y * 1,
 					price: evt.returnValues.price * 1,
-					color: '#' + (evt.returnValues.color * 1).toString(16),
+					color,
 				};
 				return data;
 			});
 			list.sort((d1, d2) => d1.blockNum - d2.blockNum);
 			list.forEach(data => {
-				cacheDB.set('history', chainName + ':' + data.blockNum, data);
-				cacheDB.set('canvas', chainName + ':' + data.x + '-' + data.y, data);
+				cacheDB.set('history', prefix + ':' + data.txHash, data);
+				cacheDB.set('canvas', prefix + ':' + data.x + '-' + data.y, data);
 				drawGrid(data.x, data.y, data.color, true);
 			});
 			var last = list[list.length - 1];
@@ -540,7 +572,7 @@ export default {
 			else {
 				this.lastDrawBlockNum = 0;
 			}
-			await cacheDB.set('history', chainName + ':0', this.lastDrawBlockNum);
+			await cacheDB.set('history', prefix + '0', this.lastDrawBlockNum);
 		},
 
 		doConvert () {
@@ -554,6 +586,8 @@ export default {
 			SocketChannel.sendRequest('checkMerkleProof', 'presale', window.ETHAddress);
 
 			var tasks = [];
+			tasks.push(this.isPENPaused());
+			tasks.push(this.isRTVPaused());
 			tasks.push(this.getCanvasID());
 			tasks.push(this.getCanvasCanWithdraw());
 			tasks.push(this.getPenPrice());
@@ -592,6 +626,15 @@ export default {
 			return await ctrCVS.methods[method](...params).call({
 				from: this.myID
 			});
+		},
+
+		async isPENPaused () {
+			var result = await this.callPEN('isPaused');
+			console.log('PEN Paused: ', result);
+		},
+		async isRTVPaused () {
+			var result = await this.callRTV('isPaused');
+			console.log('RTV Paused: ', result);
 		},
 
 		async getCanvasID () {
@@ -713,6 +756,7 @@ export default {
 				rgb[1] = color - (rgb[0] << 8);
 				rgb = 'RGB(' + rgb.join(',') + ')';
 				drawGrid(x, y, color, true);
+				this.getBasicInfos();
 			}
 			catch (err) {
 				console.error('DrawPixel Error!');

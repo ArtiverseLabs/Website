@@ -17,7 +17,7 @@ if (!location.protocol.match(/https/i)) {
 }
 
 window.Web3 = Web3;
-window.mintStage = 1;
+window.mintStage = 3;
 
 const extendJS = () => {
 	const KeySet = [];
@@ -212,6 +212,18 @@ const regSWorker = async () => {
 		console.error('install new service worker failed: ' + err.message);
 	}
 };
+window.prepareDB = async (dbName, onUpdate) => {
+	var cacheDB = new window.CachedDB(dbName, 1);
+	cacheDB.onUpdate(() => {
+		if (!!onUpdate) onUpdate(cacheDB);
+		console.log(dbName + ': Updated');
+	});
+	cacheDB.onConnect(() => {
+		console.log(dbName + ': Connected');
+	});
+	await cacheDB.connect();
+	return cacheDB;
+};
 
 (() => {
 	regSWorker();
@@ -236,8 +248,9 @@ const regSWorker = async () => {
 		if (shouldSave) localStorage.set('page-dark-mode', mode);
 	});
 	eventBus.pub('page-dark-mode', localStorage.get('page-dark-mode', false), false);
-	eventBus.sub('eth-change-user', userId => {
+	eventBus.sub('eth-change-user', (userId, chainId) => {
 		window.ETHAddress = userId;
+		window.ETHChainID = chainId;
 		window.MyID = userId;
 	});
 

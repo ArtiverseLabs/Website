@@ -55,26 +55,6 @@ div.container div.content input {
 <script>
 var cacheDB, dbStatus = 0, dbTask = [], dbRootTask;
 
-const prepareDB = async (dbName) => {
-	if (!!cacheDB) return;
-
-	var dbName = 'PreSaleList';
-	cacheDB = new window.CachedDB(dbName, 1);
-
-	cacheDB.onUpdate(() => {
-		cacheDB.open('root', 'name', 2);
-		cacheDB.open('og', 'name', 100);
-		cacheDB.open('presale', 'name', 100);
-		console.log(dbName + ': Updated');
-	});
-	cacheDB.onConnect(() => {
-		console.log(dbName + ': Connected');
-	});
-
-	await cacheDB.connect();
-	if (dbStatus === 0) dbStatus = 1;
-};
-
 export default {
 	name: 'PreSale',
 	data () {
@@ -149,7 +129,12 @@ export default {
 		this.masked = true;
 		eventBus.pub('showMask');
 
-		prepareDB().then(async () => {
+		prepareDB('PreSaleList', db => {
+			db.open('root', 'name', 2);
+			db.open('og', 'name', 100);
+			db.open('presale', 'name', 100);
+		}).then(async db => {
+			cacheDB = db;
 			if (dbStatus === 2) return;
 
 			var target = this.target;

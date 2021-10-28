@@ -210,19 +210,6 @@ const convertColorRGB = num => {
 	result[1] = b - (a << 8);
 	return result;
 };
-const prepareDB = async () => {
-	if (!!cacheDB) return;
-	var dbName = 'MasterWork';
-	cacheDB = new window.CachedDB(dbName, 1);
-	cacheDB.onUpdate(() => {
-		cacheDB.open('pixel', 'position', 10000);
-		console.log(dbName + ': Updated');
-	});
-	cacheDB.onConnect(() => {
-		console.log(dbName + ': Connected');
-	});
-	await cacheDB.connect();
-};
 const resumeSaveTasks = () => {
 	if (!cacheList) return;
 	if (cacheList.length <= 0) return;
@@ -362,7 +349,10 @@ export default {
 		};
 		img.src = '/pic/init.png';
 
-		prepareDB().then(async () => {
+		prepareDB('MasterWork', db => {
+			db.open('pixel', 'position', 10000);
+		}).then(async db => {
+			cacheDB = db;
 			if (canvasTask.length === 0) return resumeSaveTasks();
 
 			var db = await cacheDB.all('pixel');
