@@ -33,6 +33,11 @@ const routes = [
 		component: () => import('../views/Contract.vue')
 	},
 	{
+		path: '/metapen/:id',
+		name: 'MetaPen',
+		component: () => import('../views/MetaPen.vue')
+	},
+	{
 		path: '/about',
 		name: 'About',
 		component: () => import('../views/About.vue')

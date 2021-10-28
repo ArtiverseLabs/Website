@@ -65,7 +65,7 @@ export default {
 				},
 				{
 					q: "How do I know the rarity of my MetaPen?",
-					a: "The ending six digits of sha256(TX id+block number+Metapen ID)  is assigned as the color as the MetaPen, you can [check](https://xorbin.com/tools/sha256-hash-calculator) it by yourself. Since it's impossible for 16,777 MetaPens to be evenly allocated through the color pallet. You can check the palette, the more isolated a MetaPen is, the rarer."
+					a: "The ending six digits of SHA256(TX Hash + Block Number + Metapen ID) is assigned as the color as the MetaPen, you can [check](https://xorbin.com/tools/sha256-hash-calculator) it by yourself (the information should be input line by line). Since it's impossible for 16,777 MetaPens to be evenly allocated through the color pallet. You can check the palette, the more isolated a MetaPen is, the rarer."
 				},
 				{
 					q: "What color can I use to paint on the MetaCanvas?",

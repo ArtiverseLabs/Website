@@ -3,6 +3,7 @@ import App from './App.vue';
 import router from './router';
 import Notification from '@/components/notification.vue';
 import Mask from '@/components/mask.vue';
+import { keccak, sha256 } from '@/assets/hash-wasm.js';
 import '@/assets/abi.js';
 import '@/assets/address.js';
 import '@/assets/encrypt.js';
@@ -16,8 +17,10 @@ if (!location.protocol.match(/https/i)) {
 	}
 }
 
+window.keccak = keccak;
+window.sha256 = sha256;
 window.Web3 = Web3;
-window.mintStage = 3;
+window.mintStage = 1;
 
 const extendJS = () => {
 	const KeySet = [];

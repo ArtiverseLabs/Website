@@ -345,10 +345,6 @@ export default {
 			if (!!dbHooker) dbHooker();
 		});
 
-		// Contracts.address.rtv = '0x5F931E479FCde965DaeF19C296d24e3860d9d132'; // test
-		// Contracts.address.pen = '0xDF922D9f03B94d6eDC6E056807C776809C9328E4'; // test
-		// Contracts.address.cvs = '0x5B10381A0D5EaFFF2e9976a8F0e8FAC5430825Be'; // test
-
 		ctrRTV = new web3.eth.Contract(Contracts.abi.rtv, Contracts.address.rtv);
 		ctrPEN = new web3.eth.Contract(Contracts.abi.pen, Contracts.address.pen);
 		ctrCVS = new web3.eth.Contract(Contracts.abi.cvs, Contracts.address.cvs);
