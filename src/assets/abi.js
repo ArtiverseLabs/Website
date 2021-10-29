@@ -797,6 +797,25 @@ window.Contracts.abi = {
         {
           "indexed": true,
           "internalType": "address",
+          "name": "sender",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "totalSupply",
+          "type": "uint256"
+        }
+      ],
+      "name": "Mint",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
           "name": "owner",
           "type": "address"
         },
@@ -945,7 +964,7 @@ window.Contracts.abi = {
           "type": "uint256"
         }
       ],
-      "name": "mint",
+      "name": "changeMax",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -966,7 +985,7 @@ window.Contracts.abi = {
     },
     {
       "inputs": [],
-      "name": "totalSold",
+      "name": "maxSupply",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1059,6 +1078,20 @@ window.Contracts.abi = {
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getMintStage",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "",
+          "type": "uint8"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -1253,7 +1286,7 @@ window.Contracts.abi = {
           "type": "uint256"
         }
       ],
-      "name": "indexedToken",
+      "name": "tokenOfOwnerByIndex",
       "outputs": [
         {
           "internalType": "uint256",
@@ -1264,6 +1297,33 @@ window.Contracts.abi = {
       "stateMutability": "view",
       "type": "function",
       "constant": true
+    },
+    {
+      "inputs": [],
+      "name": "contractURI",
+      "outputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function",
+      "constant": true
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "uri",
+          "type": "string"
+        }
+      ],
+      "name": "setContractURI",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     },
     {
       "inputs": [
@@ -1441,12 +1501,25 @@ window.Contracts.abi = {
     {
       "inputs": [
         {
+          "internalType": "address",
+          "name": "owner",
+          "type": "address"
+        }
+      ],
+      "name": "mintFor",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "bytes32[]",
           "name": "proof",
           "type": "bytes32[]"
         }
       ],
-      "name": "purchase",
+      "name": "mintMetaPen",
       "outputs": [],
       "stateMutability": "payable",
       "type": "function",

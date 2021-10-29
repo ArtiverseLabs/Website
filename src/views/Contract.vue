@@ -53,8 +53,6 @@
 		<div class="content">
 			<span class="hint">Total Pen: </span>
 			<span class="result">{{penSupply}}</span>
-			<span class="hint">Sold Pen: </span>
-			<span class="result">{{penSold}}</span>
 			<span class="hint">Unused Pen: </span>
 			<span class="result">{{penAvailable}}</span>
 		</div>
@@ -319,7 +317,6 @@ export default {
 			penPay: 0,
 			penList: '',
 			penSupply: 0,
-			penSold: 0,
 			penAvailable: 0,
 			penPurchaseSuccessHint: '',
 			penUBalance: 0,
@@ -344,10 +341,6 @@ export default {
 			dbReady = true;
 			if (!!dbHooker) dbHooker();
 		});
-
-		ctrRTV = new web3.eth.Contract(Contracts.abi.rtv, Contracts.address.rtv);
-		ctrPEN = new web3.eth.Contract(Contracts.abi.pen, Contracts.address.pen);
-		ctrCVS = new web3.eth.Contract(Contracts.abi.cvs, Contracts.address.cvs);
 
 		eventBus.sub('eth-change-user', (userId, chainId) => {
 			if (this.maskCanvas) {
@@ -430,6 +423,23 @@ export default {
 	},
 	methods: {
 		onStart (userId, chainId) {
+			var config, chainName = 'Test';
+			if (chainId === '0x1') {
+				chainName = 'Mainnet';
+				config = Contracts.config.mainnet;
+			}
+			else if (chainId === '0x3') {
+				chainName = 'Ropsten';
+				config = Contracts.config.ropsten;
+			}
+			else {
+				config = Contracts.config.test;
+			}
+
+			ctrRTV = new web3.eth.Contract(Contracts.abi.rtv, config.rtv);
+			ctrPEN = new web3.eth.Contract(Contracts.abi.pen, config.pen);
+			ctrCVS = new web3.eth.Contract(Contracts.abi.cvs, config.cvs);
+
 			userType = 0;
 			userProof = [];
 			wallet = null;
@@ -437,18 +447,7 @@ export default {
 			this.myID = userId;
 			this.getBasicInfos();
 
-			var blockFrom = 0, chainName = 'Test';
-			if (chainId === '0x1') {
-				blockFrom = BlockFrom.mainnet;
-				chainName = 'Mainnet';
-			}
-			else if (chainId === '0x3') {
-				blockFrom = BlockFrom.ropsten;
-				chainName = 'Ropsten';
-			}
-			else {
-				blockFrom = 0;
-			}
+			var blockFrom = config.from;
 			console.log('Login ' + chainName + ' as ' + userId);
 
 			if (showPurchaseHistory) {
@@ -588,7 +587,6 @@ export default {
 			tasks.push(this.getCanvasCanWithdraw());
 			tasks.push(this.getPenPrice());
 			tasks.push(this.getPenTotalSupply());
-			tasks.push(this.getPenTotalSold());
 			tasks.push(this.getPenTotalUnused());
 			tasks.push(this.getPenMyBalance());
 			tasks.push(this.getPenMyAvailable());
@@ -659,10 +657,6 @@ export default {
 			var result = await this.callPEN('totalSupply');
 			this.penSupply = result;
 		},
-		async getPenTotalSold () {
-			var result = await this.callPEN('totalSold');
-			this.penSold = result;
-		},
 		async getPenTotalUnused () {
 			var result = await this.callPEN('totalAvailable');
 			this.penAvailable = result;
@@ -693,7 +687,7 @@ export default {
 				tasks.push(i);
 			}
 			var list = await Promise.all(tasks.map(async i => {
-				var tokenID = await this.callPEN('indexedToken', this.myID, i);
+				var tokenID = await this.callPEN('tokenOfOwnerByIndex', this.myID, i);
 				tokenID = tokenID * 1;
 				if (tokenID === 0 || typeof tokenID !== 'number') {
 					return null;
@@ -787,7 +781,7 @@ export default {
 
 			var result;
 			try {
-				result = await ctrPEN.methods.purchase(userProof).send({
+				result = await ctrPEN.methods.mintMetaPen(userProof).send({
 					from: this.myID,
 					value: amount
 				});
@@ -839,7 +833,6 @@ export default {
 				result = await ctrRTV.methods.transfer(to, amount).send({
 					from: this.myID
 				});
-				console.log(result);
 				this.rtvTransferToResult = '';
 				notify({title: 'Transfer Success', message: "You can check this transaction on EtherScan", type: 'success'});
 				this.getBasicInfos();
