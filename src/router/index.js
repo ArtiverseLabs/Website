@@ -33,9 +33,14 @@ const routes = [
 		component: () => import('../views/Contract.vue')
 	},
 	{
+		path: '/pen/:id',
+		name: 'Pen',
+		component: () => import('../views/MetaPen.vue')
+	},
+	{
 		path: '/metapen/:id',
 		name: 'MetaPen',
-		component: () => import('../views/MetaPen.vue')
+		component: () => import('../views/PenJSON.vue')
 	},
 	{
 		path: '/about',
