@@ -17,10 +17,11 @@
 			<p><span class="hint">Drawing starts</span>: Nov 1th 00:00 UTC</p>
 			<p><span class="hint">Drawing ends</span>: Nov 11th 00:00 UTC</p>
 		</div>
-		<div class="content" v-if="stage>0">
+		<div class="content center" v-if="stage>0">
 			<a href="https://github.com/ArtiverseLabs/OG-list-and-colorlist/blob/main/OG-list" target="_blank">OG List</a>
 		</div>
 		<div class="content mention">Artiverse is waiting for your masterpiece, be patient...</div>
+		<div class="content mention">Please check our <a href="https://twitter.com/ArtiverseLabs" target="_blank">Twitter</a> or <a href="https://discord.gg/8w3Wg8wUbV" target="_blank">Discord</a>.</div>
 	</div>
 </template>
 
@@ -31,6 +32,9 @@ div.content {
 div.content.mention {
 	margin-top: 20px;
 	font-style: italic;
+	text-align: center;
+}
+div.content.center {
 	text-align: center;
 }
 div.content p {
@@ -85,7 +89,6 @@ export default {
 			eventBus.pub('showMask');
 
 			Artiverso.checkMintStage().then(mintProof => {
-				mintProof.stage = 3;
 				userProof = [];
 				if (mintProof.stage === 0) { // normal user
 					if (mintStage <= 2) {
