@@ -5,17 +5,17 @@
 			<div class="progress">
 				<span class="hint">R</span>
 				<input ref="colorpickerred" type="range" name="red" max=255 min=0 :value="metapen.red" @input="changeColor('red')">
-				<span class="value">{{metapen.red}}</span>
+				<input ref="colorred" type="number" :value="metapen.red" @change="onColorChange('red')" @keyup="onColorChange('red')" />
 			</div>
 			<div class="progress">
 				<span class="hint">G</span>
 				<input ref="colorpickergreen" type="range" name="green" max=255 min=0 :value="metapen.green" @input="changeColor('green')">
-				<span class="value">{{metapen.green}}</span>
+				<input ref="colorgreen" type="number" :value="metapen.green" @change="onColorChange('green')" @keyup="onColorChange('green')" />
 			</div>
 			<div class="progress">
 				<span class="hint">B</span>
 				<input ref="colorpickerblue" type="range" name="blue" max=255 min=0 :value="metapen.blue" @input="changeColor('blue')">
-				<span class="value">{{metapen.blue}}</span>
+				<input ref="colorblue" type="number" :value="metapen.blue" @change="onColorChange('blue')" @keyup="onColorChange('blue')" />
 			</div>
 			<div class="colorResult" :style="{backgroundColor: penColor}"></div>
 		</div>
@@ -41,7 +41,7 @@ div.color-pad div.chooser-frame {
 	display: none;
 	position: absolute;
 	top: 25px;
-	width: 205px;
+	width: 210px;
 	height: 0px;
 	overflow: hidden;
 	padding: 8px;
@@ -60,6 +60,7 @@ div.color-pad:hover div.chooser-frame {
 div.color-pad div.chooser-frame div.progress {
 	display: block;
 	height: 20px;
+	width: 205px;
 }
 div.color-pad div.chooser-frame div.progress span,
 div.color-pad div.chooser-frame div.progress input {
@@ -81,6 +82,11 @@ div.color-pad div.chooser-frame div.progress input {
 	outline: none;
 	background: transparent;
 	border-bottom: none;
+}
+div.color-pad div.chooser-frame div.progress input[type="number"] {
+	width: 50px;
+	margin-left: 0px;
+	margin-right: 0px;
 }
 div.color-pad div.chooser-frame div.progress input::-webkit-slider-thumb {
 	-webkit-appearance: none;
@@ -160,6 +166,10 @@ export default {
 	methods: {
 		changeColor (type) {
 			var ui = this.$refs['colorpicker' + type];
+			this.metapen[type] = ui.valueAsNumber;
+		},
+		onColorChange (type) {
+			var ui = this.$refs['color' + type];
 			this.metapen[type] = ui.valueAsNumber;
 		}
 	}

@@ -136,10 +136,7 @@ export default {
 			}
 
 			ctrPEN = new web3.eth.Contract(Contracts.abi.pen, config.pen);
-
-			var tasks = [];
-			tasks.push(this.getPenPrice());
-			await Promise.all(tasks);
+			await this.getPenPrice();
 
 			eventBus.pub('hideMask');
 		},
