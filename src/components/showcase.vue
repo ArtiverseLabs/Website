@@ -43,7 +43,7 @@
 				</div>
 			</div>
 		</div>
-		<div class="content center"><button @click="gotoMint">You need a MetaPen to draw.</button></div>
+		<div class="content center"><button @click="gotoMint">View MetaCanvas and more info</button></div>
 	</div>
 </template>
 

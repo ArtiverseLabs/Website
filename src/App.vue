@@ -81,6 +81,21 @@ button[disabled="true"], input[type="submit"][disabled="true"], .button[disabled
 	border: 1px solid rgb(65, 65, 65);
 	color: rgb(65, 65, 65);
 }
+@media screen and (max-width: 350px) {
+	body {
+		font-size: 14px;
+	}
+}
+@media screen and (max-width: 300px) {
+	body {
+		font-size: 12px;
+	}
+}
+@media screen and (max-width: 280px) {
+	body {
+		font-size: 10px;
+	}
+}
 </style>
 
 <script>

@@ -91,22 +91,6 @@ export default {
 				eventBus.pub('hideMask');
 			}
 		});
-		eventBus.sub('checkMerkleProof', msg => {
-			this.checked = true;
-			eventBus.pub('hideMask');
-			if (!msg.success) {
-				notify({title: msg.error, type: 'error'});
-				return;
-			}
-
-			if (msg.data.address === msg.data.node) {
-				this.address = '';
-			}
-			else {
-				this.address = msg.data.address;
-			}
-			this.proof = [...msg.data.proof];
-		});
 		eventBus.sub('eth-change-user', userId => {
 			this.eth = userId;
 		});
@@ -160,7 +144,7 @@ export default {
 		SocketChannel.sendRequest('getPreSaleList', this.target);
 	},
 	methods: {
-		checkNode () {
+		async checkNode () {
 			var node = this.$refs.leafNode.value;
 			node = node.trim();
 			if (node.length === 0) {
@@ -168,7 +152,16 @@ export default {
 				return;
 			}
 			eventBus.pub('showMask');
-			SocketChannel.sendRequest('checkMerkleProof', this.target, node);
+			var mintProof = await Artiverso.checkMintStage();
+			this.checked = true;
+			if (mintProof.address === node) {
+				this.address = '';
+			}
+			else {
+				this.address = mintProof.address;
+			}
+			this.proof = [...mintProof.proof];
+			eventBus.pub('hideMask');
 		}
 	},
 }

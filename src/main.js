@@ -64,6 +64,33 @@ const extendJS = () => {
 		value = JSON.stringify(value);
 		this.setItem(key, value);
 	};
+	localStorage.__proto__.getWithExpire = function (key, delay, def={}) {
+		if (typeof delay !== 'number') {
+			def = delay;
+			delay = Infinity;
+		}
+
+		var item = this.getItem(key);
+		if (!item) return def;
+		try {
+			item = JSON.parse(item);
+		}
+		catch (err) {
+			return def;
+		}
+
+		var duration = Date.now() - (item.stamp || 0);
+		if (duration > delay) {
+			this.removeItem(key);
+			return def;
+		}
+		return item.value;
+	};
+	localStorage.__proto__.setWithExpire = function (key, value) {
+		value = {value, stamp: Date.now()};
+		value = JSON.stringify(value);
+		this.setItem(key, value);
+	};
 
 	const events = new Map();
 	window.eventBus = {
@@ -243,7 +270,6 @@ window.prepareDB = async (dbName, onUpdate) => {
 		MyID = String.random(32);
 		localStorage.set('myid', MyID);
 	}
-	console.log('MyID: ' + MyID);
 
 	eventBus.sub('page-dark-mode', (mode, shouldSave=true) => {
 		if (mode) document.body.classList.add('dark-mode');
@@ -256,8 +282,55 @@ window.prepareDB = async (dbName, onUpdate) => {
 		window.ETHChainID = chainId;
 		window.MyID = userId;
 	});
+	eventBus.sub('checkMerkleProof', msg => {
+		var target, info = {}, address;
+		if (!msg.success) {
+			target = msg.target;
+			notify({title: 'Check Merkle Proof Failed', message: msg.reason, type: 'error'});
+			return;
+		}
+		else {
+			target = msg.data.target;
+			info.proof = msg.data.proof;
+			address = msg.data.address;
+		}
+		Artiverso._checkMintStatus[target] = info;
+
+		if (!!Artiverso._checkMintStatus.og && !!Artiverso._checkMintStatus.presale) {
+			let result = {stage: 0, proof: [], address};
+			if (Artiverso._checkMintStatus.og.proof.length > 0) {
+				result.stage = 2;
+				result.proof = Artiverso._checkMintStatus.og.proof;
+			}
+			else if (Artiverso._checkMintStatus.presale.proof.length > 0) {
+				stage = 1;
+				result.proof = Artiverso._checkMintStatus.presale.proof;
+			}
+			sessionStorage.setWithExpire('MyMintStatus', result);
+			let reses = [...Artiverso._checkMintStatus._reses];
+			Artiverso._checkMintStatus._reses = [];
+			reses.forEach(res => res(result));
+		}
+	});
 
 	connectETH();
+
+	window.Artiverso.checkMintStage = () => new Promise(res => {
+		if (!window.ETHAddress) {
+			notify({title: 'Connect to MetaMask first please.'});
+			return;
+		}
+
+		var stage = sessionStorage.getWithExpire('MyMintStatus', 1000 * 60, null);
+		if (!!stage) {
+			return res(stage);
+		}
+
+		Artiverso._checkMintStatus = Artiverso._checkMintStatus || {_reses: []};
+		Artiverso._checkMintStatus._reses.push(res);
+		SocketChannel.sendRequest('checkMerkleProof', 'og', window.ETHAddress);
+		SocketChannel.sendRequest('checkMerkleProof', 'presale', window.ETHAddress);
+	});
 }) ();
 
 createApp(App)

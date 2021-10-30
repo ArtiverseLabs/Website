@@ -349,47 +349,6 @@ export default {
 			}
 			this.onStart(userId, chainId);
 		});
-		eventBus.sub('checkMerkleProof', msg => {
-			if (!msg.success) {
-				notify({title: "get merkletree proof failed", type: 'error'});
-				return;
-			}
-			var data = msg.data;
-			if (data.proof.length === 0) {
-				if (userType === 0) {
-					if (mintStage === 0) {
-						this.mentionHint = '(Please wait for mint)';
-					}
-					else if (mintStage === 1) {
-						this.mentionHint = '(You are not in the OG list)';
-					}
-					else if (mintStage === 2) {
-						this.mentionHint = '(You are not in the PreSale list)';
-					}
-					if (mintStage > 2) {
-						this.canMint = true;
-						this.mentionHint = '';
-					}
-				}
-				return;
-			}
-			if (data.target === 'presale' && userType > 1) return;
-			if (data.target === 'presale') {
-				userType = 1;
-				userProof = data.proof;
-				this.userStatus = ' | PreSale User';
-				if (mintStage > 1) this.canMint = true;
-			}
-			else if (data.target === 'og') {
-				userType = 2;
-				userProof = data.proof;
-				this.userStatus = ' | OG User';
-				this.canMint = true;
-			}
-			else {
-				return;
-			}
-		});
 		eventBus.sub('loadCurrentCanvas', ({result, data}) => {
 			if (!this.maskCanvas) return;
 			this.maskCanvas = false;
@@ -577,8 +536,61 @@ export default {
 		async getBasicInfos () {
 			eventBus.pub('showMask');
 
-			SocketChannel.sendRequest('checkMerkleProof', 'og', window.ETHAddress);
-			SocketChannel.sendRequest('checkMerkleProof', 'presale', window.ETHAddress);
+			Artiverso.checkMintStage().then(mintProof => {
+				userType = mintProof.stage;
+				userProof = [];
+				if (userType === 0) { // normal user
+					this.userStatus = '';
+					if (mintStage === 0) {
+						this.mentionHint = '(Please wait for mint)';
+						this.canMint = false;
+					}
+					else if (mintStage === 1) {
+						this.mentionHint = '(You are not in the OG list)';
+						this.canMint = false;
+					}
+					else if (mintStage === 2) {
+						this.mentionHint = '(You are not in the PreSale list)';
+						this.canMint = false;
+					}
+					else {
+						this.mentionHint = '';
+						this.canMint = true;
+					}
+				}
+				else if (userType === 1) { // presale user
+					this.userStatus = ' | PreSale User';
+					if (mintStage === 0) {
+						this.mentionHint = '(Please wait for mint)';
+						this.canMint = false;
+					}
+					else if (mintStage === 1) {
+						this.mentionHint = '(You are not in the OG list)';
+						this.canMint = false;
+					}
+					else {
+						this.mentionHint = '';
+						this.canMint = true;
+						if (mintStage === 2) {
+							userProof = mintProof.proof;
+						}
+					}
+				}
+				else if (userType === 2) { // og user
+					this.userStatus = ' | OG User';
+					if (mintStage === 0) {
+						this.mentionHint = '(Please wait for mint)';
+						this.canMint = false;
+					}
+					else {
+						this.mentionHint = '';
+						this.canMint = true;
+						if (mintStage <= 2) {
+							userProof = mintProof.proof;
+						}
+					}
+				}
+			});
 
 			var tasks = [];
 			tasks.push(this.isPENPaused());
