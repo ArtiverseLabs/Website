@@ -194,8 +194,8 @@ export default {
 				}
 				this.penPurchaseSuccessHint = hint;
 				var msg = "You can check this transaction on EtherScan\n" + hint;
+				this.$router.push({push: '/pen/' + ids[0]});
 				notify({title: 'Purchase Success', message: msg, type: 'success'});
-				this.getBasicInfos();
 			}
 			catch (err) {
 				console.error('Purchase Error!');
